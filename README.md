@@ -2,7 +2,6 @@
 
 A lightweight personal todo widget for Ubuntu desktop. Sits as a compact panel at the top of your screen — always visible, no clutter.
 
-![Todo Ubuntu widget](https://raw.githubusercontent.com/vishnug1995/todo-ubuntu/main/screenshots/preview.png)
 
 ## Features
 
