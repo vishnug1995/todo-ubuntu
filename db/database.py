@@ -40,6 +40,6 @@ def _apply_migrations(conn: sqlite3.Connection) -> None:
 def create_repository() -> TodoRepository:
     # Future Supabase: if os.environ.get('SUPABASE_URL'): return SupabaseRepository(...)
     db_path = os.path.join(get_data_dir(), "todos.db")
-    conn = sqlite3.connect(db_path, check_same_thread=False)
+    conn = sqlite3.connect(db_path, check_same_thread=False, timeout=30)
     _apply_migrations(conn)
     return SqliteRepository(conn)
