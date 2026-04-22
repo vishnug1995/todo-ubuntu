@@ -90,19 +90,26 @@ class MainWindow(Gtk.Window):
     # ── Position persistence ──────────────────────────────────────────
 
     def _restore_position(self):
+        display = Gdk.Display.get_default()
+        monitor = display.get_primary_monitor() if display else None
+        workarea = monitor.get_workarea() if monitor else None
+
         try:
             with open(_POS_FILE) as f:
                 pos = json.load(f)
-            self.move(pos["x"], pos["y"])
+            x, y = pos["x"], pos["y"]
+            # Clamp to workarea so a stale position can't hide the window
+            if workarea:
+                x = max(workarea.x, min(x, workarea.x + workarea.width - 50))
+                y = max(workarea.y, min(y, workarea.y + workarea.height - 50))
+            self.move(x, y)
             return
         except (FileNotFoundError, KeyError, ValueError):
             pass
-        # Default: top-center of primary monitor
-        display = Gdk.Display.get_default()
-        monitor = display.get_primary_monitor() if display else None
-        if monitor:
-            geom = monitor.get_geometry()
-            self.move(geom.x + geom.width // 2 - 200, geom.y)
+
+        # Default: top-center, just below the GNOME panel
+        if workarea:
+            self.move(workarea.x + workarea.width // 2 - 200, workarea.y)
 
     def _on_configure(self, _win, _event):
         if self._save_timeout:
