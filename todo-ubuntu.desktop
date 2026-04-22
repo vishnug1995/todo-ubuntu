@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Todo Ubuntu
+Exec=python3 INSTALL_PATH/todo_app.py
+Comment=Personal todo widget
+X-GNOME-Autostart-enabled=true
+Hidden=false
+NoDisplay=false
