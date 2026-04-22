@@ -2,7 +2,11 @@
 Type=Application
 Name=Todo Ubuntu
 Exec=python3 INSTALL_PATH/todo_app.py
+Icon=INSTALL_PATH/icon.svg
 Comment=Personal todo widget
+Categories=Utility;
+Keywords=todo;task;reminder;
+StartupNotify=false
 X-GNOME-Autostart-enabled=true
 Hidden=false
 NoDisplay=false

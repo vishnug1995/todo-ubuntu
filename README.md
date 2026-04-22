@@ -40,15 +40,20 @@ bash setup.sh
 
 `setup.sh` will:
 1. Install GTK Python bindings (`python3-gi`, `python3-gi-cairo`, `gir1.2-gtk-3.0`) via `apt`
-2. Write `~/.config/autostart/todo-ubuntu.desktop` so the app opens on every login
+2. Register the app in `~/.local/share/applications/` so it appears in the GNOME Activities launcher
+3. Write `~/.config/autostart/todo-ubuntu.desktop` so the app opens on every login
 
 ### Launch
 
+**From the app launcher (recommended):**
+Press the **Super** key, type **"Todo"** — the app appears. Right-click its icon → **Add to Favorites** to pin it to your dock.
+
+**From terminal:**
 ```bash
 python3 todo_app.py
 ```
 
-The widget appears at the top-center of your primary monitor. It will open automatically on your next login.
+The widget appears at the top-center of your primary monitor. It will also open automatically on your next login.
 
 ## Usage
 
@@ -112,10 +117,12 @@ The storage layer uses an abstract `TodoRepository` base class (`db/repository.p
 
 No UI code needs to change.
 
-## Removing Autostart
+## Uninstall
 
-To stop the app from opening on login:
+Remove the launcher entry and autostart:
 
 ```bash
 rm ~/.config/autostart/todo-ubuntu.desktop
+rm ~/.local/share/applications/todo-ubuntu.desktop
+update-desktop-database ~/.local/share/applications
 ```
