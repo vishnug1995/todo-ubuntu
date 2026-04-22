@@ -55,6 +55,8 @@ class TodoApp(Gtk.Application):
     def do_activate(self):
         # Called on every launch attempt — including from a second instance.
         # If a window already exists (app was hidden), just show it again.
+        if self._repo is None:
+            return  # startup failed; error already logged
         try:
             if self._window is None:
                 self._window = MainWindow(self._repo)
