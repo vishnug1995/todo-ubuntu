@@ -34,11 +34,14 @@ class SqliteRepository(TodoRepository):
 
     def add_todo(self, text: str, date: str) -> dict:
         cur = self._conn.execute(
-            "INSERT INTO todos (text, date) VALUES (?, ?) RETURNING *",
+            "INSERT INTO todos (text, date) VALUES (?, ?)",
             (text, date),
         )
         self._conn.commit()
-        return dict(cur.fetchone())
+        row = self._conn.execute(
+            "SELECT * FROM todos WHERE id = ?", (cur.lastrowid,)
+        ).fetchone()
+        return dict(row)
 
     def complete_todo(self, todo_id: int) -> None:
         self._conn.execute(

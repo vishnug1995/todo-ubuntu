@@ -11,10 +11,6 @@ class DateHeader(Gtk.Box):
         self._current_date = date.today()
         self.get_style_context().add_class("date-header")
 
-        # Make header draggable
-        self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
-        self.connect("button-press-event", self._on_drag)
-
         prev_btn = Gtk.Button(label="‹")
         prev_btn.get_style_context().add_class("nav-btn")
         prev_btn.set_relief(Gtk.ReliefStyle.NONE)
@@ -88,12 +84,3 @@ class DateHeader(Gtk.Box):
             label = d.strftime("%A, %b %-d %Y")
         self._date_btn.set_label(label)
 
-    def _on_drag(self, widget, event):
-        if event.button == Gdk.BUTTON_PRIMARY:
-            win = widget.get_toplevel()
-            win.begin_move_drag(
-                event.button,
-                int(event.x_root),
-                int(event.y_root),
-                event.time,
-            )
