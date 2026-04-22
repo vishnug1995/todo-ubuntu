@@ -5,11 +5,32 @@
     border-radius: 8px;
 }
 
+/* ── Drag handle ── */
+.drag-handle {
+    background-color: #11111b;
+    border-radius: 8px 8px 0 0;
+    min-height: 16px;
+}
+
+.drag-handle:hover {
+    background-color: #1e1e2e;
+}
+
+.drag-grip {
+    color: #45475a;
+    font-size: 10px;
+    letter-spacing: 3px;
+    padding: 0;
+}
+
+.drag-handle:hover .drag-grip {
+    color: #6c7086;
+}
+
 /* ── Date header ── */
 .date-header {
     background-color: #181825;
     padding: 6px 4px;
-    border-radius: 8px 8px 0 0;
 }
 
 .date-btn {

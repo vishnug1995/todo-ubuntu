@@ -1,16 +1,24 @@
+import json
+import os
+
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk, GLib
 
+from db.database import get_data_dir
+from ui.drag_handle import DragHandle
 from ui.date_header import DateHeader
 from ui.todo_list import TodoListSection
 from ui.add_form import AddForm
+
+_POS_FILE = os.path.join(get_data_dir(), "window_pos.json")
 
 
 class MainWindow(Gtk.Window):
     def __init__(self, repo):
         super().__init__(title="Todo")
         self._repo = repo
+        self._save_timeout = 0
 
         self.set_decorated(False)
         self.set_default_size(400, -1)
@@ -18,11 +26,11 @@ class MainWindow(Gtk.Window):
         self.set_skip_taskbar_hint(False)
         self.get_style_context().add_class("main-window")
 
-        # Prevent actual destroy; just hide
         self.connect("delete-event", lambda w, e: w.hide() or True)
+        self.connect("configure-event", self._on_configure)
 
         self._build_ui()
-        self._position_window()
+        self._restore_position()
         self.show_all()
         self.refresh_todos()
 
@@ -30,52 +38,89 @@ class MainWindow(Gtk.Window):
         root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self.add(root)
 
-        # Date header (draggable)
+        # Drag handle strip at the very top
+        root.pack_start(DragHandle(), False, False, 0)
+
+        # Date header
         self._date_header = DateHeader(
             on_date_change=self._on_date_change,
             on_close=self.hide,
         )
         root.pack_start(self._date_header, False, False, 0)
 
-        sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
-        root.pack_start(sep, False, False, 0)
+        root.pack_start(
+            Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL), False, False, 0
+        )
 
-        # Pending todos
+        # Body: pending list + completed expander, with a minimum height
+        body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        body.set_size_request(-1, 160)
+
         self._pending_list = TodoListSection(
             on_toggle=self._on_toggle,
             on_delete=self._on_delete,
-            max_height=260,
+            max_height=240,
         )
-        root.pack_start(self._pending_list, False, False, 0)
+        body.pack_start(self._pending_list, True, True, 0)
 
-        # Completed expander
         self._expander = Gtk.Expander()
         self._expander.get_style_context().add_class("completed-expander")
         self._expander.set_margin_start(8)
         self._expander.set_margin_end(8)
         self._expander.set_margin_top(4)
+        self._expander.set_margin_bottom(4)
 
         self._completed_list = TodoListSection(
             on_toggle=self._on_toggle,
             on_delete=self._on_delete,
-            max_height=160,
+            max_height=140,
         )
         self._expander.add(self._completed_list)
-        root.pack_start(self._expander, False, False, 0)
+        body.pack_start(self._expander, False, False, 0)
 
-        sep2 = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
-        root.pack_start(sep2, False, False, 0)
+        root.pack_start(body, True, True, 0)
 
-        # Add form
+        root.pack_start(
+            Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL), False, False, 0
+        )
+
         self._add_form = AddForm(on_add=self._on_add)
         root.pack_start(self._add_form, False, False, 0)
 
-    def _position_window(self):
+    # ── Position persistence ──────────────────────────────────────────
+
+    def _restore_position(self):
+        try:
+            with open(_POS_FILE) as f:
+                pos = json.load(f)
+            self.move(pos["x"], pos["y"])
+            return
+        except (FileNotFoundError, KeyError, ValueError):
+            pass
+        # Default: top-center of primary monitor
         display = Gdk.Display.get_default()
-        monitor = display.get_primary_monitor()
+        monitor = display.get_primary_monitor() if display else None
         if monitor:
             geom = monitor.get_geometry()
             self.move(geom.x + geom.width // 2 - 200, geom.y)
+
+    def _on_configure(self, _win, _event):
+        if self._save_timeout:
+            GLib.source_remove(self._save_timeout)
+        self._save_timeout = GLib.timeout_add(600, self._flush_position)
+
+    def _flush_position(self):
+        x, y = self.get_position()
+        try:
+            os.makedirs(os.path.dirname(_POS_FILE), exist_ok=True)
+            with open(_POS_FILE, "w") as f:
+                json.dump({"x": x, "y": y}, f)
+        except OSError:
+            pass
+        self._save_timeout = 0
+        return False
+
+    # ── Todo operations ───────────────────────────────────────────────
 
     def refresh_todos(self):
         current_date = self._date_header.get_date().isoformat()
@@ -92,23 +137,23 @@ class MainWindow(Gtk.Window):
         self._expander.set_sensitive(n > 0)
 
         self.show_all()
-        self.resize(400, 1)  # shrink to fit content
+        self.resize(400, 1)
 
-    def _on_date_change(self, _date_str: str):
+    def _on_date_change(self, _date_str):
         self.refresh_todos()
 
-    def _on_toggle(self, todo_id: int, checked: bool):
+    def _on_toggle(self, todo_id, checked):
         if checked:
             self._repo.complete_todo(todo_id)
         else:
             self._repo.uncomplete_todo(todo_id)
         self.refresh_todos()
 
-    def _on_delete(self, todo_id: int):
+    def _on_delete(self, todo_id):
         self._repo.delete_todo(todo_id)
         self.refresh_todos()
 
-    def _on_add(self, text: str):
+    def _on_add(self, text):
         current_date = self._date_header.get_date().isoformat()
         self._repo.add_todo(text, current_date)
         self.refresh_todos()
